@@ -1,0 +1,24 @@
+# Optional: a node_exporter for this host, installed only when install.sh finds no
+# node_exporter that Vantage's containers can reach. Listens on one address only
+# (@NODE_LISTEN@, normally this host's Tailscale IPv4), not on every interface.
+[Unit]
+Description=node_exporter for Vantage
+
+[Container]
+ContainerName=vantage-node-exporter
+Image=quay.io/prometheus/node-exporter:v1.8.2
+Network=host
+PodmanArgs=--pid=host
+ReadOnly=true
+NoNewPrivileges=true
+DropCapability=ALL
+Volume=/:/host:ro,rslave
+Exec=--path.rootfs=/host --web.listen-address=@NODE_LISTEN@
+
+[Service]
+# Binding to the Tailscale address fails until tailscaled is up after boot; retry.
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

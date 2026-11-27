@@ -1,0 +1,32 @@
+# Vantage's own Prometheus (separate from any other Prometheus on this host).
+# No published port: only the backend talks to it, inside the vantage network.
+[Unit]
+Description=Vantage Prometheus
+Wants=vantage-backend.service
+After=vantage-backend.service
+
+[Container]
+ContainerName=vantage-prometheus
+Image=docker.io/prom/prometheus:v3.2.1
+Network=vantage.network
+# The backend's default VANTAGE_PROMETHEUS_URL is http://prometheus:9090.
+PodmanArgs=--network-alias=prometheus
+
+ReadOnly=true
+NoNewPrivileges=true
+DropCapability=ALL
+
+# Keep --storage.tsdb.retention.time equal to VANTAGE_PROMETHEUS_RETENTION in vantage.env.
+Exec=--config.file=/etc/prometheus/prometheus.yml --storage.tsdb.path=/prometheus --storage.tsdb.retention.time=30d --storage.tsdb.retention.size=10GB
+
+# The fixed bootstrap config from deploy/prometheus/prometheus.yml (copied by install.sh).
+Volume=%h/.config/vantage/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+Volume=vantage-prometheus-data:/prometheus
+Secret=vantage-prometheus-token,type=mount,target=prometheus_token,uid=65534,gid=65534,mode=0400
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

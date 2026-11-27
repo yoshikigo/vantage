@@ -1,0 +1,32 @@
+# Vantage frontend (React app + nginx, HTTPS with a self-signed certificate).
+# Published on loopback only; install.sh puts tailscale serve in front of it.
+[Unit]
+Description=Vantage frontend
+Requires=vantage-backend.service
+After=vantage-backend.service
+
+[Container]
+ContainerName=vantage-frontend
+Image=ghcr.io/levi-xy/vantage-frontend:0.1.1
+# Fixed address: the backend trusts exactly this one (VANTAGE_TRUSTED_PROXIES).
+Network=vantage.network:ip=192.168.255.242
+PublishPort=127.0.0.1:@LOCAL_PORT@:8443
+
+ReadOnly=true
+NoNewPrivileges=true
+DropCapability=ALL
+Tmpfs=/tmp
+
+Environment=VANTAGE_HTTPS=true
+Environment=VANTAGE_HSTS=false
+
+# The nginx-unprivileged user is 101.
+Secret=vantage-tls-cert,type=mount,target=tls_cert,uid=101,gid=101,mode=0444
+Secret=vantage-tls-key,type=mount,target=tls_key,uid=101,gid=101,mode=0400
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
