@@ -1,0 +1,13 @@
+# Vantage's own rootless Podman network (same fixed range as deploy/docker-compose.yml).
+# The frontend gets 192.168.255.242, outside IPRange, so no other container can take it;
+# the backend trusts exactly that address (VANTAGE_TRUSTED_PROXIES).
+# If this clashes with your LAN, change Subnet, Gateway, IPRange, the frontend's ip= and
+# VANTAGE_TRUSTED_PROXIES in vantage-backend.container together.
+[Unit]
+Description=Vantage network
+
+[Network]
+NetworkName=vantage
+Subnet=192.168.255.240/28
+Gateway=192.168.255.241
+IPRange=192.168.255.248/29

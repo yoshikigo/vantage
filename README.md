@@ -54,6 +54,10 @@ tar -xzf vantage-deploy.tar.gz && cd vantage-deploy
 
 **Back up `secrets/master.key` somewhere off the server.** Without it, stored device credentials can't be decrypted, and it isn't part of Vantage's own backups.
 
+### Rootless Podman Quadlet + Tailscale
+
+One host, rootless Podman with systemd user units, published on your tailnet with `tailscale serve` (no LAN or internet port): `./deploy/quadlet/install.sh`. See [deploy/quadlet/README.md](deploy/quadlet/README.md).
+
 ### Portainer / Dockge
 
 One compose file that needs no other files on the host. It is also on every release: `curl -fLO https://github.com/levi-xy/vantage/releases/latest/download/compose.yml`.

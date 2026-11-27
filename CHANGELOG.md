@@ -4,6 +4,7 @@ All notable changes, newest first. Versions follow [semantic versioning](https:/
 
 ## Unreleased
 
+- New deployment option: rootless Podman Quadlet units in `deploy/quadlet/` with `install.sh` / `uninstall.sh`, monitoring the host it runs on (a node_exporter bound to the host's Tailscale address) and published on the tailnet with `tailscale serve`. The Docker compose files are unchanged.
 - Every install has an id (a new `settings` row `install_id`, made by migration 0015 and kept in backups; a restore takes the backup's). Every series Vantage exposes, and every scrape target it hands to Prometheus, now carries `vantage_install=<id>`, and a new `vantage_build_info{version, commit}` gauge reports the running version.
 - Every query Vantage sends to Prometheus (cards, maps, alert rules, the self-check) is scoped to its install id, so several installs, or other data, can share one Prometheus without mixing. A query the scoping can't place with confidence is refused (400 `query not supported`) instead of being sent unscoped.
 - The "Metrics not being collected" check no longer looks for a scrape job named `vantage-backend`: it reads this install's `vantage_build_info`, so the job can have any name. When it fires, it says why: `never_seen` (Prometheus never stored this install's metrics: the scrape job, the token or relabeling) or `stale` (it stopped), with a fix in the banner and in the Telegram message. `GET /alerts/delivery-status` gains this `reason`.

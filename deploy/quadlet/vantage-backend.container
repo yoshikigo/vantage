@@ -1,0 +1,50 @@
+# Vantage backend (FastAPI, pollers, alerting). Rootless Podman Quadlet.
+# Installed by deploy/quadlet/install.sh into ~/.config/containers/systemd/.
+[Unit]
+Description=Vantage backend
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+ContainerName=vantage-backend
+Image=ghcr.io/levi-xy/vantage-backend:0.1.1
+Network=vantage.network
+# The frontend's nginx and Prometheus' bootstrap config reach it as "backend".
+PodmanArgs=--network-alias=backend
+
+# Same hardening as the compose files.
+ReadOnly=true
+NoNewPrivileges=true
+DropCapability=ALL
+Tmpfs=/tmp
+# Unprivileged ICMP for ping checks without NET_RAW (this container's netns only).
+Sysctl="net.ipv4.ping_group_range=0 65535"
+
+# Non-secret settings: ~/.config/vantage/vantage.env (edit, then restart this unit).
+EnvironmentFile=%h/.config/vantage/vantage.env
+Environment=VANTAGE_RELEASE=0.1.1
+Environment=VANTAGE_MASTER_KEY_FILE=/run/secrets/master_key
+Environment=VANTAGE_PROMETHEUS_TOKEN_FILE=/run/secrets/prometheus_token
+# Only the bundled nginx (vantage-frontend, fixed address) may name the client.
+Environment=VANTAGE_TRUSTED_PROXIES=192.168.255.242/32
+
+# Podman secrets (created by install.sh), readable only by the backend user (10001).
+Secret=vantage-master-key,type=mount,target=master_key,uid=10001,gid=10001,mode=0400
+Secret=vantage-prometheus-token,type=mount,target=prometheus_token,uid=10001,gid=10001,mode=0400
+
+Volume=vantage-backend-data:/data
+
+HealthCmd=python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz/live', timeout=3)"
+HealthInterval=30s
+HealthStartPeriod=60s
+# A clean stop deletes the backend heartbeat (restore / key rotation can then run).
+PodmanArgs=--stop-timeout=20
+
+[Service]
+# The startup gate exits 1 while an offline command holds the maintenance lock; retry.
+Restart=always
+RestartSec=10
+TimeoutStartSec=900
+
+[Install]
+WantedBy=default.target
